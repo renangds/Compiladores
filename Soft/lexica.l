@@ -23,19 +23,19 @@ ID {LETRA}({LETRA}|{NUM})*
 
 "fun"		{return TK_FUNCTIONS;}
 	
-"int"		{return TK_INT;}
-
-"float"		{return TK_FLOAT;}
+"int"		{return TK_TYPE_INT;}
 
 "double"	{return TK_DOUBLE;}
 
 "short"		{return TK_SHORT;}
 
-"char"		{return TK_CHAR;}
-
 "string"	{return STRING;}
 
-"bool"		{return TK_BOOL;}
+"char"		{return TK_TYPE_CHAR;}
+
+"float"		{return TK_TYPE_FLOAT;}
+
+"bool"		{return TK_TYPE_BOOL;}
 
 "var"		{return TK_VAR;}
 
@@ -99,8 +99,20 @@ ID {LETRA}({LETRA}|{NUM})*
 
 [+\-*/]		{ return *yytext; }
 
-{NUM}		{ yylval.traducao = yytext; return TK_NUM; }
-{ID}		{ yylval.label = yytext; return TK_ID; }
+"BOOL"		{yylval.t_var = "bool";
+			return TK_BOOL;}
+
+{CHAR}		{yylval.traducao = yytext;
+			return TK_CHAR;}
+
+{NUM}		{ yylval.traducao = yytext;
+			return TK_INT; }
+
+{REAL}		{yylval.traducao = yytext; 
+			return TK_FLOAT;}
+
+{ID}		{ yylval.label = yytext; 
+			return TK_ID; }
 
 .			{ *yytext; }
 
