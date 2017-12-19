@@ -1,5 +1,7 @@
 %{
 	#include <string>
+	#include <iostream>
+	using namespace std;
 %}
 
 ESPACO [ \t]
@@ -8,94 +10,151 @@ LETRA [A-Za-z_]
 BOOL [true|false]
 
 DELIM {ESPACO}+
-NUM {DIGITO}+
+NUM [-]?{DIGITO}+
 REAL {NUM}+("."{NUM}+)?
 CHAR \'({LETRA}|{NUM})\'
-STRING \"({LETRA}|{NUM})+\"
+STRING \"([^\"\n]|\\\")*\"
 ID {LETRA}({LETRA}|{NUM})*
 VAR ({CHAR}|{REAL})*
 
 %%
 
-"\n"		{}
+"\n"		{lines++;}
 
 {DELIM} 	{}
 
-"main"		{return TK_MAIN;}
+"main"		{main_called = 1;
+			return TK_MAIN;}
 
 "begin"		{return TK_BEGIN;}
 
 "end"		{return TK_END;}
 
-"fun"		{FUN function;
-			if(pilha.empty()){
- 				function.name = "main";
- 				function.next = NULL;
-				pilha.push(function); 
-				esc_global = &pilha.top();
-			} else{
-				function.next = &pilha.top();
-				pilha.push(function);
+"functions"	{
+				return TK_FUNCTIONS;
 			}
-			return TK_FUNCTION;}
+
+"procedure"		{FUN function;
+					if(pilha.empty()){
+ 						function.next = NULL;
+						pilha.push(function);
+					} else{
+						function.next = &pilha.top();
+						pilha.push(function);
+					}
+				return TK_PROCEDURE;}
+
+"function"		{FUN function;
+					if(pilha.empty()){
+ 						function.next = NULL;
+						pilha.push(function);
+						first_exestack = &pilha.top();
+					} else{
+						function.next = &pilha.top();
+						pilha.push(function);
+					}
+				return TK_FUNCTION;}
 
 "int"|"float"|"char"|"bool"|"var"|"string"		{yylval.var_tipo = yytext;
 												return TK_TYPES;}
 
-"while"		{yylval.label = create_loop_names();
-			FUN function;
-			function.next = &pilha.top();
-			pilha.push(function);
-			return TK_WHILE;}
+"while"		{
+					if(pilha.top().name != "do"){
+						yylval.label = create_loop_names();
+						FUN function;
+						function.next = &pilha.top();
+						pilha.push(function);
+						return TK_WHILE;
+						}
+					}
 
-"do"		{return TK_DO;}
+"do"		{yylval.label = create_loop_names();
+				FUN function;
+				function.name = "do";
+				function.next = &pilha.top();
+				pilha.push(function);
+				return TK_DO;}
 
 "for"		{yylval.label = create_loop_names();
-			FUN function;
-			function.next = &pilha.top();
-			pilha.push(function);
-			return TK_FOR;}
+				FUN function;
+				function.next = &pilha.top();
+				pilha.push(function);
+				return TK_FOR;}
+
+"foreach"	{yylval.label = create_loop_names();
+				FUN function;
+				function.next = &pilha.top();
+				pilha.push(function);
+				return TK_FOREACH;}
+
+"in"		{return TK_IN;}
+
+"not"		{return TK_NOT;}
+
+"as"		{return TK_AS;}
 
 "until"		{yylval.label = create_loop_names();
-			return TK_UNTIL;}
+					return TK_UNTIL;}
 
-"if"		{return TK_IF;}
+"if"		{FUN function;
+				function.next = &pilha.top();
+				pilha.push(function);
+				return TK_IF;}
 
-"else"		{return TK_ELSE;}
+"else"		{FUN function;
+					function.next = &pilha.top();
+					pilha.push(function);
+					return TK_ELSE;}
 
-"elif"		{return TK_ELIF;}
+"elif"		{FUN function;
+					function.next = &pilha.top();
+					pilha.push(function);
+					return TK_ELIF;}
 
-"switch"	{return TK_SWITCH;}
+"switch"	{yylval.label = create_switch_names();
+			FUN function;
+			function.name = "switch";
+			function.next = &pilha.top();
+			pilha.push(function);
+			return TK_SWITCH;}
 
 "case"		{return TK_CASE;}
+
+"return"	{return TK_RETURN;}
+
+"default"	{return TK_DEFAULT;}
 
 "break"		{return TK_BREAK;}
 
 "continue"	{return TK_CONTINUE;}
 
-"println"	{return TK_PRINTLN;}
+"readln"	{return TK_READLN;}
 
-"get"		{return TK_GET;}
+"writeln"		{return TK_WRITELN;}
 
 "true"		{yylval.valor = "1";
-			yylval.label = create_temp_names();
-			yylval.var_tipo = "bool";
-			return TK_TRUE;}
+					yylval.label = create_temp_names();
+					yylval.var_tipo = "bool";
+					return TK_TRUE;}
 
 "false"		{yylval.valor = "0";
-			yylval.label = create_temp_names();
-			yylval.var_tipo = "bool";
-			return TK_FALSE;}
+					yylval.label = create_temp_names();
+					yylval.var_tipo = "bool";
+					return TK_FALSE;}
 
 "global"	{return TK_GLOBAL;}
 
 "%"			{}
 
+".^"		{return TK_POW;}
+
+"!"			{return TK_FACTORIAL;}
+
 "<"|">"|"<="|">="|"!="|"=="|"||"|"&&"	{yylval.op = yytext;
 										yylval.var_tipo = "bool";
 										return TK_OPL;}
 
-[(){}[\];,]	{ return *yytext; }
+[(){}[\];,:]	{ return *yytext; }
 
 [+\-*/]		{ return *yytext; }
 
@@ -111,39 +170,47 @@ VAR ({CHAR}|{REAL})*
 "-="				{yylval.op = yytext;
 					return TK_SUBI;}
 
-{NUM}		{ yylval.valor = yytext; 
-			yylval.label = create_temp_names();
-			yylval.var_tipo = "int";
-			return TK_INT; }
+"*="				{yylval.op = yytext;
+					return TK_MULTI;}
+
+"/="				{yylval.op = yytext;
+					return TK_DIVI;}
+				
+"<->"				{yylval.op = yytext;
+					return TK_INVERT;}
+
+{NUM}		{ yylval.valor = yytext;
+				yylval.label = create_temp_names();
+				yylval.var_tipo = "int";
+				return TK_INT; }
 
 {CHAR}		{yylval.valor = yytext;
-			yylval.label = create_temp_names();
-			yylval.var_tipo = "char";
-			return TK_CHAR;}
+					yylval.label = create_temp_names();
+					yylval.var_tipo = "char";
+					return TK_CHAR;}
 
 {STRING}	{yylval.valor = yytext;
-			yylval.label = create_temp_names();
-			yylval.var_tipo = "char*";
-			return TK_STRING;}
+					yylval.label = create_temp_names();
+					yylval.var_tipo = "string";
+					return TK_STRING;}
 
 {REAL}		{yylval.valor = yytext;
-			yylval.label = create_temp_names();
-			yylval.var_tipo = "float";
-			return TK_FLOAT;}
+					yylval.label = create_temp_names();
+					yylval.var_tipo = "float";
+					return TK_FLOAT;}
 
 {VAR}		{yylval.valor = yytext;
-			yylval.label = yytext;
-			yylval.var_tipo = "?";
-			return TK_VAR;}
+				yylval.label = yytext;
+				yylval.var_tipo = "?";
+				return TK_VAR;}
 
-{ID}		{yylval.nome = yytext; 
-			yylval.var_tipo = "id";
-			return TK_ID; }
+{ID}		{yylval.nome = yytext;
+				return TK_ID; }
 
 
 "(int)"|"(float)"|"(char)"	{yylval.cast = yytext;
-							yylval.label = create_temp_names();
-							return TK_CAST;}
+														yylval.label = create_temp_names();
+														return TK_CAST;}
 
 .			{ *yytext; }
 
