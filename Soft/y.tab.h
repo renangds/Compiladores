@@ -94,7 +94,9 @@ extern int yydebug;
     TK_IN = 304,
     TK_FOREACH = 305,
     TK_NOT = 306,
-    TK_AS = 307
+    TK_AS = 307,
+    TK_MOD = 308,
+    TK_MODI = 309
   };
 #endif
 /* Tokens.  */
@@ -148,6 +150,8 @@ extern int yydebug;
 #define TK_FOREACH 305
 #define TK_NOT 306
 #define TK_AS 307
+#define TK_MOD 308
+#define TK_MODI 309
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED

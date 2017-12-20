@@ -94,7 +94,10 @@ VAR ({CHAR}|{REAL})*
 "as"		{return TK_AS;}
 
 "until"		{yylval.label = create_loop_names();
-					return TK_UNTIL;}
+			FUN function;
+			function.next = &pilha.top();
+			pilha.push(function);
+			return TK_UNTIL;}
 
 "if"		{FUN function;
 				function.next = &pilha.top();
@@ -144,7 +147,8 @@ VAR ({CHAR}|{REAL})*
 
 "global"	{return TK_GLOBAL;}
 
-"%"			{}
+"%"			{yylval.op = yytext;
+			return TK_MOD;}
 
 ".^"		{return TK_POW;}
 
@@ -164,17 +168,20 @@ VAR ({CHAR}|{REAL})*
 "--"				{yylval.op = yytext;
 					return TK_SUB1;}
 
-"+="				{yylval.op = yytext;
+"+="				{yylval.op = "+";
 					return TK_ADDI;}
 
-"-="				{yylval.op = yytext;
+"-="				{yylval.op = "-";
 					return TK_SUBI;}
 
-"*="				{yylval.op = yytext;
+"*="				{yylval.op = "*";
 					return TK_MULTI;}
 
-"/="				{yylval.op = yytext;
+"/="				{yylval.op = "/";
 					return TK_DIVI;}
+
+"%="				{yylval.op = "%";
+					return TK_MODI;}
 				
 "<->"				{yylval.op = yytext;
 					return TK_INVERT;}

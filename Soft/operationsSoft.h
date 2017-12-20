@@ -251,7 +251,10 @@
 		if(pilha.size() > 1){
 			for( ; temp; temp = temp->next){
 				for(int i=0; i<temp->map_vectors.size(); i++){
-					if(temp->map_vectors[i].name == name && temp->map_vectors[i].column != "0") return &temp->map_vectors[i];
+					if(temp->map_vectors[i].name == name && temp->map_vectors[i].column != "0"){
+						//cout << "entrou" << endl;
+						return &temp->map_vectors[i];
+					} 
 				}
 			}
 		} else{
